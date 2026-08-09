@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "operation_id": "upp-payment:synthetic-001",
+  "source_system": "UPP-DEMO",
+  "amount": "1000.00",
+  "currency": "RUB",
+  "status": "ready_to_send"
+}

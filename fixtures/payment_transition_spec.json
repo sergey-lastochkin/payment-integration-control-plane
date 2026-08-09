@@ -1,0 +1,14 @@
+{
+  "same_state_is_noop": true,
+  "transitions": {
+    "prepared": ["ready_to_send", "manual_check"],
+    "ready_to_send": ["sending", "manual_check"],
+    "sending": ["sent", "manual_check"],
+    "sent": ["accepted", "rejected", "manual_check"],
+    "accepted": ["executed", "rejected", "returned", "manual_check"],
+    "executed": [],
+    "rejected": [],
+    "returned": [],
+    "manual_check": []
+  }
+}
