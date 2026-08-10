@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+
 from payment_orchestration.core import (
     BankStatementRow,
     ChecksumError,
@@ -15,6 +16,7 @@ from payment_orchestration.core import (
     Payment,
     PaymentService,
     Reconciler,
+    Registry,
     SQLiteIntegrationRepository,
     verify_envelope,
 )
@@ -215,3 +217,35 @@ def test_parallel_send_claims_external_side_effect_once(tmp_path):
     assert service.registry.get(payment.operation_id()).status == "sent"
     assert service.registry.get(payment.operation_id()).attempts == 1
     assert {record.status for record in records} <= {"sending", "sent"}
+
+
+def test_status_callback_before_send_response_keeps_stronger_state(tmp_path):
+    payment = make_payment()
+    repository = SQLiteIntegrationRepository(str(tmp_path / "ops.sqlite"))
+
+    class CallbackFirstAdapter:
+        service: PaymentService
+
+        def send(self, value):
+            self.service.callback(
+                value.operation_id(), "accepted", "bank-42", event_id="status-42"
+            )
+            return "bank-42"
+
+    adapter = CallbackFirstAdapter()
+    service = PaymentService(repository, adapter)
+    adapter.service = service
+    assert service.send(payment).status == "accepted"
+    assert repository.get(payment.operation_id()).attempts == 1
+
+
+def test_manual_check_can_be_closed_with_audited_decision():
+    payment = make_payment()
+    service = PaymentService(Registry(), MockBankAdapter())
+    service.send(payment)
+    service.callback(payment.operation_id(), "manual_check", event_id="dispute-1")
+    closed = service.resolve_manual(
+        payment.operation_id(), "executed", "statement and bank status agree", "operator-1"
+    )
+    assert closed.status == "executed"
+    assert closed.audit[-1].source == "manual_resolution"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import StrEnum
 from hashlib import sha256
@@ -26,7 +26,14 @@ TRANSITIONS: dict[str, set[str]] = {
     PaymentStatus.READY_TO_SEND: {PaymentStatus.SENDING, PaymentStatus.MANUAL_CHECK},
     # A claimed send deliberately remains ``sending`` after an adapter exception:
     # the remote side effect may have happened even when its response was lost.
-    PaymentStatus.SENDING: {PaymentStatus.SENT, PaymentStatus.MANUAL_CHECK},
+    # A bank status can arrive through another channel before the sender gets
+    # the HTTP response. It is stronger evidence than the missing response.
+    PaymentStatus.SENDING: {
+        PaymentStatus.SENT,
+        PaymentStatus.ACCEPTED,
+        PaymentStatus.REJECTED,
+        PaymentStatus.MANUAL_CHECK,
+    },
     PaymentStatus.SENT: {
         PaymentStatus.ACCEPTED,
         PaymentStatus.REJECTED,
@@ -41,7 +48,13 @@ TRANSITIONS: dict[str, set[str]] = {
     PaymentStatus.EXECUTED: set(),
     PaymentStatus.REJECTED: set(),
     PaymentStatus.RETURNED: set(),
-    PaymentStatus.MANUAL_CHECK: set(),
+    # Manual resolution must leave an auditable terminal decision instead of
+    # turning the operation into a permanent dead end.
+    PaymentStatus.MANUAL_CHECK: {
+        PaymentStatus.EXECUTED,
+        PaymentStatus.REJECTED,
+        PaymentStatus.RETURNED,
+    },
 }
 
 
@@ -122,7 +135,7 @@ class AuditEvent:
     external_id: str | None = None
     event_id: str | None = None
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
 

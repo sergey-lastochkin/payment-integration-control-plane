@@ -72,10 +72,16 @@ class PaymentService:
         except Exception as exc:
             # The remote side effect is now unknown.  Keep the claim rather than
             # reopening it and risking a duplicate external payment.
-            claimed.last_error = f"{type(exc).__name__}:{exc}"
-            claimed.last_message = "send outcome unknown; reconcile before retry"
-            self.registry.save(claimed)
+            current = self.registry.get(claimed.operation_id)
+            current.last_error = f"{type(exc).__name__}:{exc}"
+            current.last_message = "send outcome unknown; reconcile before retry"
+            self.registry.save(current)
             raise
+        current = self.registry.get(claimed.operation_id)
+        if current.status != PaymentStatus.SENDING:
+            # A status callback can win the race with the adapter response.
+            # Do not overwrite accepted/rejected evidence with a weaker `sent`.
+            return current
         return self._transition(
             claimed.operation_id,
             PaymentStatus.SENT,
@@ -106,3 +112,18 @@ class PaymentService:
         record.callback_ids.add(stable_event_id)
         self.registry.save(record)
         return record
+
+    def resolve_manual(
+        self, operation_id: str, status: str, decision_note: str, decided_by: str
+    ) -> IntegrationRecord:
+        record = self.registry.get(operation_id)
+        if record.status != PaymentStatus.MANUAL_CHECK:
+            raise TransitionError("manual resolution requires manual_check")
+        if not decision_note.strip() or not decided_by.strip():
+            raise ValueError("manual decision requires note and actor reference")
+        return self._transition(
+            operation_id,
+            status,
+            "manual_resolution",
+            f"{decided_by}: {decision_note}",
+        )

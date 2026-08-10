@@ -3,12 +3,12 @@
   "transitions": {
     "prepared": ["ready_to_send", "manual_check"],
     "ready_to_send": ["sending", "manual_check"],
-    "sending": ["sent", "manual_check"],
+    "sending": ["sent", "accepted", "rejected", "manual_check"],
     "sent": ["accepted", "rejected", "manual_check"],
     "accepted": ["executed", "rejected", "returned", "manual_check"],
     "executed": [],
     "rejected": [],
     "returned": [],
-    "manual_check": []
+    "manual_check": ["executed", "rejected", "returned"]
   }
 }

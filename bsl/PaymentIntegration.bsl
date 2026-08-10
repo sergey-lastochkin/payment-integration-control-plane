@@ -24,12 +24,13 @@
     Если СтарыйСтатус = НовыйСтатус Тогда Возврат Истина; КонецЕсли;
     Переходы = Новый Соответствие;
     Переходы.Вставить("prepared", "ready_to_send,manual_check");
-    // "sending" is a claim state. A target configuration must persist a
-    // compare-and-set claim before the external bank call.
+    // "sending" is a claim state. A bank callback can arrive before the
+    // sending process reads its response, so accepted and rejected are legal.
     Переходы.Вставить("ready_to_send", "sending,manual_check");
-    Переходы.Вставить("sending", "sent,manual_check");
+    Переходы.Вставить("sending", "sent,accepted,rejected,manual_check");
     Переходы.Вставить("sent", "accepted,rejected,manual_check");
     Переходы.Вставить("accepted", "executed,rejected,returned,manual_check");
+    Переходы.Вставить("manual_check", "executed,rejected,returned");
     Если НЕ Переходы.СодержитКлюч(СтарыйСтатус) Тогда Возврат Ложь; КонецЕсли;
     Возврат Найти("," + Переходы[СтарыйСтатус] + ",", "," + НовыйСтатус + ",") > 0;
 КонецФункции
