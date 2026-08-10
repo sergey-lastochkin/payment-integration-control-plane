@@ -9,6 +9,7 @@ import subprocess
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from payment_orchestration.adapters import (
     FileClientBankAdapter,
@@ -252,9 +253,8 @@ def main() -> None:
     run_dir.mkdir(parents=True)
     records = []
     for name, scenario in SCENARIOS.items():
-        scenario_dir = run_dir / name
-        scenario_dir.mkdir()
-        evidence = scenario(scenario_dir)
+        with TemporaryDirectory(prefix=f"{name}-", dir=run_dir) as temporary:
+            evidence = scenario(Path(temporary))
         record = {"scenario": name, "status": "passed", "evidence": evidence}
         (run_dir / f"{name}.json").write_text(
             json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
