@@ -9,6 +9,22 @@ from pathlib import Path
 
 from payment_orchestration.domain import TRANSITIONS
 
+SCENARIO_LABELS = {
+    "duplicate_operation": "Повторное создание операции",
+    "duplicate_http_request": "Повторный HTTP-запрос",
+    "status_before_lost_response": "Статус до потерянного ответа",
+    "repeated_bank_status": "Повторный банковский статус",
+    "repeated_statement": "Повторная выписка",
+    "ambiguous_statement": "Неоднозначная строка выписки",
+    "illegal_transition": "Недопустимый переход состояния",
+    "worker_restart": "Перезапуск обработчика",
+    "storage_unavailable": "Недоступно хранилище",
+    "route_unavailable": "Недоступен маршрут",
+    "auth_error": "Ошибка авторизации",
+    "corrupted_exchange": "Повреждённый обменный конверт",
+    "manual_resolution": "Ручное завершение",
+}
+
 
 def failure_summary(summary: dict[str, object], output: Path) -> None:
     scenarios = summary["scenarios"]
@@ -16,13 +32,13 @@ def failure_summary(summary: dict[str, object], output: Path) -> None:
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="white"/>',
-        '<text x="24" y="34" font-family="Arial, sans-serif" font-size="20">Локальный failure lab: сохранённый результат</text>',
+        '<text x="24" y="34" font-family="Arial, sans-serif" font-size="20">Локальный прогон: сценарии сбоев</text>',
         f'<text x="24" y="58" font-family="Arial, sans-serif" font-size="13" fill="#475569">run_id: {escape(str(summary["run_id"]))}; только эмулятор, без 1С, n8n и банка</text>',
     ]
     for index, scenario in enumerate(scenarios):
         y = 74 + index * 34
-        name = escape(str(scenario["scenario"]))
-        status = escape(str(scenario["status"]).upper())
+        name = escape(SCENARIO_LABELS.get(str(scenario["scenario"]), str(scenario["scenario"])))
+        status = "ПРОЙДЕН" if scenario["status"] == "passed" else escape(str(scenario["status"]))
         parts.extend(
             [
                 f'<text x="24" y="{y + 20}" font-family="monospace" font-size="14">{name}</text>',
