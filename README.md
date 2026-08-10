@@ -1,5 +1,7 @@
 # Платёжный контур 1С
 
+[![CI](https://github.com/sergey-lastochkin/payment-integration-control-plane/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sergey-lastochkin/payment-integration-control-plane/actions/workflows/ci.yml)
+
 Проект посвящён платежам, которые формируются по заявкам в 1С:УПП и передаются во внешний банковский контур.
 
 ![Итог локального прогона сценариев сбоев](failure_lab/runs/local-2026-08-10-01/report/failure-summary.svg)
