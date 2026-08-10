@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "1c-payment-orchestration"
 version = "0.1.0"
-description = "Idempotent outgoing-payment orchestration for legacy 1C with a file-bank adapter, explicit state machine, audit trail, and reconciliation."
+description = "Исходящие платежи 1С: операция, состояния, аудит и сверка."
 requires-python = ">=3.11"
 
 [project.optional-dependencies]

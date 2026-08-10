@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "status": "WAITING_FOR_ENVIRONMENT",
+  "run_id": "",
+  "timestamp": "",
+  "code_commit": "",
+  "platform_1c_version": null,
+  "configuration_version": null,
+  "http_request_ids": [],
+  "business_operation_ids": [],
+  "n8n_execution_ids": [],
+  "status_transitions": [],
+  "duration_ms": null,
+  "errors": [],
+  "duplicate_suppression": [],
+  "artifacts": {
+    "screenshots_1c": [],
+    "n8n_workflow": [],
+    "http_evidence": [],
+    "traces": []
+  }
+}

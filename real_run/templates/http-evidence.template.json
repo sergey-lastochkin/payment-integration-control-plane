@@ -1,0 +1,10 @@
+{
+  "request_id": "",
+  "operation_id": "",
+  "method": "POST",
+  "endpoint_kind": "1c_test_http_service",
+  "request_body_sha256": "",
+  "response_status": null,
+  "response_body_sha256": "",
+  "redaction_applied": true
+}
