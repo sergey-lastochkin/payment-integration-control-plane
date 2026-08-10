@@ -1,0 +1,8 @@
+{
+  "scenario": "ambiguous_statement",
+  "status": "passed",
+  "evidence": {
+    "status": "manual_check",
+    "candidate_count": 2
+  }
+}

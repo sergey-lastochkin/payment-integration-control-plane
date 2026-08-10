@@ -1,0 +1,112 @@
+{
+  "run_id": "local-2026-08-10-01",
+  "executed_at": "2026-08-10T20:18:05.280886+00:00",
+  "code_commit": "d0b861ea2e914973d96ad1eefb254948c86673d8",
+  "scope": "local deterministic failure lab; no 1C, n8n or bank connection",
+  "scenarios": [
+    {
+      "scenario": "duplicate_operation",
+      "status": "passed",
+      "evidence": {
+        "operation_id": "upp-payment:case-duplicate-operation",
+        "attempts": 0
+      }
+    },
+    {
+      "scenario": "duplicate_http_request",
+      "status": "passed",
+      "evidence": {
+        "attempts": 1,
+        "outbox_files": 1
+      }
+    },
+    {
+      "scenario": "status_before_lost_response",
+      "status": "passed",
+      "evidence": {
+        "status": "accepted",
+        "attempts": 1
+      }
+    },
+    {
+      "scenario": "repeated_bank_status",
+      "status": "passed",
+      "evidence": {
+        "accepted_events": 1,
+        "status": "accepted"
+      }
+    },
+    {
+      "scenario": "repeated_statement",
+      "status": "passed",
+      "evidence": {
+        "first_status": "matched",
+        "replayed": true
+      }
+    },
+    {
+      "scenario": "ambiguous_statement",
+      "status": "passed",
+      "evidence": {
+        "status": "manual_check",
+        "candidate_count": 2
+      }
+    },
+    {
+      "scenario": "illegal_transition",
+      "status": "passed",
+      "evidence": {
+        "blocked": true,
+        "from_status": "sent",
+        "to_status": "executed"
+      }
+    },
+    {
+      "scenario": "worker_restart",
+      "status": "passed",
+      "evidence": {
+        "status_after_restart": "sent",
+        "attempts": 1
+      }
+    },
+    {
+      "scenario": "storage_unavailable",
+      "status": "passed",
+      "evidence": {
+        "blocked": true
+      }
+    },
+    {
+      "scenario": "route_unavailable",
+      "status": "passed",
+      "evidence": {
+        "status": "sending",
+        "retry_action": "reconcile_before_retry"
+      }
+    },
+    {
+      "scenario": "auth_error",
+      "status": "passed",
+      "evidence": {
+        "status": "sending",
+        "retry_action": "reconcile_before_retry"
+      }
+    },
+    {
+      "scenario": "corrupted_exchange",
+      "status": "passed",
+      "evidence": {
+        "blocked": true,
+        "check": "checksum_mismatch"
+      }
+    },
+    {
+      "scenario": "manual_resolution",
+      "status": "passed",
+      "evidence": {
+        "status": "executed",
+        "audit_source": "manual_resolution"
+      }
+    }
+  ]
+}

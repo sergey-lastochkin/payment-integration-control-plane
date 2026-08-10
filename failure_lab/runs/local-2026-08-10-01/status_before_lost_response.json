@@ -1,0 +1,8 @@
+{
+  "scenario": "status_before_lost_response",
+  "status": "passed",
+  "evidence": {
+    "status": "accepted",
+    "attempts": 1
+  }
+}

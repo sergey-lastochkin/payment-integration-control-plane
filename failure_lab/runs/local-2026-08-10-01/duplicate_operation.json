@@ -1,0 +1,8 @@
+{
+  "scenario": "duplicate_operation",
+  "status": "passed",
+  "evidence": {
+    "operation_id": "upp-payment:case-duplicate-operation",
+    "attempts": 0
+  }
+}

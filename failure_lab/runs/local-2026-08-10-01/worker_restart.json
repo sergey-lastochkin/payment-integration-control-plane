@@ -1,0 +1,8 @@
+{
+  "scenario": "worker_restart",
+  "status": "passed",
+  "evidence": {
+    "status_after_restart": "sent",
+    "attempts": 1
+  }
+}
