@@ -1,56 +1,60 @@
-# 1C Payment Orchestration
+# Платёжный контур 1С
 
-## What
+Локальная модель обработки платежа от заявки в 1С:УПП до банковского маршрута и обратного статуса. Код фиксирует идентификатор бизнес-операции до внешнего вызова, не отправляет платёж повторно после неопределённого результата и выносит спорные выписки на ручную проверку.
 
-Clean-room reference implementation of an outgoing-payment control plane for a legacy 1C system. It validates a payment, records a durable integration state, produces a deterministic bank envelope, consumes idempotent callbacks, and reconciles synthetic statement rows.
+![Результат локального failure lab](failure_lab/runs/local-2026-08-10-01/report/failure-summary.svg)
 
-## Why
+Локальный прогон проверил 13 сценариев: повторное создание, повторный HTTP-запрос, статус до ответа отправителя, повторные статусы и выписки, неоднозначная сверка, рестарт, ошибки хранилища и маршрута, auth error, повреждённый конверт и ручное завершение. Исходный результат сохранён в [summary.json](failure_lab/runs/local-2026-08-10-01/summary.json), по одному JSON на сценарий.
 
-A direct “send document and mark paid” script loses the distinction between a business operation and a transport attempt. Timeouts, duplicate callbacks, repeated statement files and ambiguous matches can then create duplicate payments or false execution statuses. This project makes those boundaries explicit.
+Это уровень C: запуск не подключался к УПП, n8n, банку, RabbitMQ или PostgreSQL. Скриншотов 1С и n8n нет, потому что обезличенная тестовая база и тестовый маршрут пока не предоставлены.
 
-## Architecture
+[Жизненный цикл](docs/payment-lifecycle.md) · [Сверка выписки](docs/reconciliation.md) · [Сценарии сбоев](docs/failure-model.md) · [Эксплуатационные границы](docs/operations.md)
 
-- `domain.py`: payment model, stable operation ID, validation and legal state graph.
-- `repository.py`: in-memory and SQLite integration-status repositories plus audit history and an atomic local send claim.
-- `adapters.py`: local mock/file bank adapters and SHA-256 exchange envelopes.
-- `service.py`: guarded orchestration and callback idempotency.
-- `reconciliation.py`: composite matching, ambiguity escalation and statement replay protection.
-- `bsl/PaymentIntegration.bsl`: 1C-side reference handlers and register contracts.
+## Как проходит операция
 
-## Key engineering decisions
+1. В заявке на оплату в УПП сохраняется ссылка на исходный документ.
+2. Исходящее платёжное поручение получает тот же `operation_id` и связь с заявкой.
+3. n8n выбирает маршрут банка: API, DirectBank, штатный обмен 1С или файл.
+4. Отправитель фиксирует состояние `sending` до внешнего вызова.
+5. Банк или выписка возвращают статус. Повторный callback определяется по `event_id`.
+6. При равных кандидатах сверки операция остаётся в `manual_check`; оператор завершает её только с причиной.
 
-- Idempotency is keyed by an immutable business operation, not by a retry attempt.
-- Registering the same operation with changed payment fields is a conflict.
-- Every state change is guarded and appended to the audit trail.
-- SQLite registration uses `INSERT OR IGNORE` followed by a read, so a repeated register cannot overwrite attempts, callbacks or audit.
-- `ready_to_send → sending` is a compare-and-set claim before `adapter.send()`; concurrent local workers do not call the adapter twice.
-- A bank timeout leaves the claim in `sending`: the remote outcome is unknown and must be reconciled before retry.
-- Reconciliation requires a confident unique candidate; ties go to `manual_check`.
-- File payloads are deterministic and checksum-verified before reuse.
+Схема переходов строится скриптом из `TRANSITIONS`: [status-model.mmd](failure_lab/runs/local-2026-08-10-01/report/status-model.mmd).
 
-## Run
+## Что показал прогон
 
-```bash
-python3.12 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e .
-```
+| Сценарий | Сохранённое подтверждение |
+|---|---|
+| Два одинаковых HTTP-запроса | Одна попытка и один файл локального outbox |
+| Callback пришёл до ответа отправителя | Статус `accepted` не перезаписан на более слабый `sent` |
+| Повторный callback | В аудите одна запись `accepted` |
+| Повторная выписка | Вторая строка отмечена `replayed=true` |
+| Неоднозначная выписка | Два кандидата, состояние `manual_check` |
+| Недоступный маршрут или auth error | Операция остаётся `sending`, до повтора нужна сверка |
+| Ручное решение | Переход в terminal status получает источник `manual_resolution` |
 
-The adapters call no real bank. `examples/payment.json` and all test identifiers are synthetic.
+Таблица – краткое изложение [summary.json](failure_lab/runs/local-2026-08-10-01/summary.json), а не отдельные ручные измерения.
 
-## Test
+## Как повторить локальную проверку
 
 ```bash
-.venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python -m pytest -q
+python -m venv .venv
+.venv/bin/pip install -e '.[dev]'
+
+PYTHONPATH=src .venv/bin/python -m pytest
+PYTHONPATH=src .venv/bin/python failure_lab/run.py \
+  --run-id local-YYYY-MM-DD-01
+PYTHONPATH=src .venv/bin/python failure_lab/render_report.py \
+  --summary failure_lab/runs/local-YYYY-MM-DD-01/summary.json \
+  --output-dir failure_lab/runs/local-YYYY-MM-DD-01/report
+ruff check src tests failure_lab
 ```
 
-The suite covers state guards, a ThreadPoolExecutor single-send claim, parallel SQLite registration, callbacks, SQLite reopen, timeout evidence, checksum tampering, operation conflicts, composite ambiguity, transition-spec/BSL parity and statement replay.
+`run.py` создаёт временные SQLite и файлы банковского конверта внутри временного каталога и удаляет их после сценария. В `runs/` остаются только JSON-результаты и графические отчёты.
 
-## Limitations
+## Ограничения текущего этапа
 
-- BSL was statically reviewed but **not runtime-tested on a 1C platform**.
-- The file adapter is a local protocol demonstrator, not a client-bank format.
-- Authentication, signing, bank-specific status mappings and production migrations are not included.
-- Local claim safety is tested for one process/SQLite database. It is not an exactly-once guarantee across an arbitrary bank API; a real adapter must accept the operation/batch ID as an idempotency key.
-- No real client, bank account, company or payment data is present.
+- BSL-файл в `bsl/` описывает точки интеграции и переходы, но не запускался в тестовой УПП.
+- Реальный n8n workflow, банковские API, DirectBank и штатный обмен 1С не проверялись из этого репозитория.
+- Тестовые реквизиты вымышлены. В репозитории нет клиентских документов, счетов, ИНН, КПП, адресов серверов, токенов или ключей.
+- После появления тестового контура нужны отдельные обезличенные скрины заявки и платёжного поручения, трассировка n8n, журнал статусов и проверка маршрута до банка.
