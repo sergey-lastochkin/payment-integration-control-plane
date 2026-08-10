@@ -3,7 +3,17 @@ from decimal import Decimal
 
 import pytest
 
-from payment_orchestration.core import *
+from payment_orchestration.adapters import FileClientBankAdapter, MockBankAdapter
+from payment_orchestration.domain import (
+    Party,
+    Payment,
+    TransitionError,
+    ValidationError,
+    validate,
+)
+from payment_orchestration.reconciliation import Reconciler
+from payment_orchestration.repository import Registry
+from payment_orchestration.service import PaymentService
 
 
 def payment(ref="doc-1", amount="100.00"):

@@ -6,20 +6,21 @@ from decimal import Decimal
 
 import pytest
 
-from payment_orchestration.core import (
+from payment_orchestration.adapters import (
+    FileClientBankAdapter,
+    MockBankAdapter,
+    verify_envelope,
+)
+from payment_orchestration.domain import (
     BankStatementRow,
     ChecksumError,
     DuplicatePaymentError,
-    FileClientBankAdapter,
-    MockBankAdapter,
     Party,
     Payment,
-    PaymentService,
-    Reconciler,
-    Registry,
-    SQLiteIntegrationRepository,
-    verify_envelope,
 )
+from payment_orchestration.reconciliation import Reconciler
+from payment_orchestration.repository import Registry, SQLiteIntegrationRepository
+from payment_orchestration.service import PaymentService
 
 
 def make_payment(ref="doc-1", amount="100.00"):
@@ -55,8 +56,6 @@ def test_sqlite_repository_survives_reopen(tmp_path):
 
 
 def test_same_operation_changed_amount_is_conflict():
-    from payment_orchestration.core import Registry
-
     repository = Registry()
     repository.register(make_payment(amount="100"))
     with pytest.raises(DuplicatePaymentError):
@@ -64,8 +63,6 @@ def test_same_operation_changed_amount_is_conflict():
 
 
 def test_timeout_records_attempt_and_error():
-    from payment_orchestration.core import Registry
-
     payment = make_payment()
     repository = Registry()
     service = PaymentService(
@@ -78,8 +75,6 @@ def test_timeout_records_attempt_and_error():
 
 
 def test_callback_event_is_idempotent():
-    from payment_orchestration.core import Registry
-
     payment = make_payment()
     service = PaymentService(Registry(), MockBankAdapter())
     service.send(payment)
@@ -128,8 +123,6 @@ def test_composite_match_requires_confident_evidence():
 
 
 def test_audit_has_every_legal_transition():
-    from payment_orchestration.core import Registry
-
     payment = make_payment()
     service = PaymentService(Registry(), MockBankAdapter())
     service.send(payment)
