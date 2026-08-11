@@ -1,0 +1,8 @@
+{
+  "scenario": "route_unavailable",
+  "status": "passed",
+  "evidence": {
+    "status": "sending",
+    "retry_action": "reconcile_before_retry"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "scenario": "manual_resolution",
+  "status": "passed",
+  "evidence": {
+    "status": "executed",
+    "audit_source": "manual_resolution"
+  }
+}

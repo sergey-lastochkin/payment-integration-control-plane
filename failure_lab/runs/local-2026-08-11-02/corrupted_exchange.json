@@ -1,0 +1,8 @@
+{
+  "scenario": "corrupted_exchange",
+  "status": "passed",
+  "evidence": {
+    "blocked": true,
+    "check": "checksum_mismatch"
+  }
+}
