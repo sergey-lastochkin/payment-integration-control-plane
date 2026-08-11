@@ -1,7 +1,17 @@
 from __future__ import annotations
 
+import json
+from hashlib import sha256
+
 from .adapters import BankAdapter
-from .domain import IntegrationRecord, Payment, PaymentStatus, TransitionError, validate
+from .domain import (
+    CallbackConflictError,
+    IntegrationRecord,
+    Payment,
+    PaymentStatus,
+    TransitionError,
+    validate,
+)
 from .repository import IntegrationRepository, transition_record
 
 
@@ -9,6 +19,21 @@ class PaymentService:
     def __init__(self, registry: IntegrationRepository, adapter: BankAdapter) -> None:
         self.registry = registry
         self.adapter = adapter
+        recover = getattr(registry, "recover_sending", None)
+        self.recovered_operations = recover() if recover else []
+
+    @property
+    def recovery_contract(self) -> str:
+        """Describe the safe next step for claims whose external result is unknown."""
+
+        capabilities = getattr(self.adapter, "capabilities", None)
+        if capabilities is None:
+            return "manual_or_reconciliation"
+        if capabilities.status_lookup == "supported":
+            return "status_lookup"
+        if capabilities.send_semantics == "idempotent":
+            return "idempotent_retry_requires_explicit_operator_policy"
+        return "manual_or_reconciliation"
 
     def _transition(
         self,
@@ -77,6 +102,12 @@ class PaymentService:
             current.last_message = "send outcome unknown; reconcile before retry"
             self.registry.save(current)
             raise
+        fault = getattr(self.registry, "_fault", None)
+        if fault:
+            # A controlled crash here models response loss after a remote side
+            # effect. The durable claim remains SENDING until a fresh service
+            # instance classifies it as OUTCOME_UNKNOWN.
+            fault("send_response_before_persist")
         current = self.registry.get(claimed.operation_id)
         if current.status != PaymentStatus.SENDING:
             # A status callback can win the race with the adapter response.
@@ -99,7 +130,34 @@ class PaymentService:
         event_id: str | None = None,
     ) -> IntegrationRecord:
         record = self.registry.get(operation_id)
-        stable_event_id = event_id or f"{external_id or ''}:{status}:{message}"
+        canonical = json.dumps(
+            {
+                "operation_id": operation_id,
+                "external_id": external_id or "",
+                "status": status,
+                "message": message,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        stable_event_id = event_id or f"callback:{sha256(canonical.encode()).hexdigest()}"
+        payload_hash = sha256(canonical.encode()).hexdigest()
+        durable_apply = getattr(self.registry, "apply_callback", None)
+        if durable_apply:
+            updated, outcome = durable_apply(
+                operation_id=operation_id,
+                status=status,
+                external_id=external_id,
+                message=message,
+                event_id=stable_event_id,
+                payload_hash=payload_hash,
+            )
+            if outcome == "conflict":
+                raise CallbackConflictError(
+                    f"callback event {stable_event_id} has a different payload"
+                )
+            return updated
         if stable_event_id in record.callback_ids:
             return record
         if status == record.status:

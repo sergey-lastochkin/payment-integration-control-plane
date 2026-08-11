@@ -27,7 +27,8 @@
     // "sending" is a claim state. A bank callback can arrive before the
     // sending process reads its response, so accepted and rejected are legal.
     Переходы.Вставить("ready_to_send", "sending,manual_check");
-    Переходы.Вставить("sending", "sent,accepted,rejected,manual_check");
+    Переходы.Вставить("sending", "outcome_unknown,sent,accepted,rejected,manual_check");
+    Переходы.Вставить("outcome_unknown", "accepted,executed,rejected,returned,manual_check");
     Переходы.Вставить("sent", "accepted,rejected,manual_check");
     Переходы.Вставить("accepted", "executed,rejected,returned,manual_check");
     Переходы.Вставить("manual_check", "executed,rejected,returned");

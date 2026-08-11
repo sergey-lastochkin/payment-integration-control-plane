@@ -3,7 +3,8 @@
   "transitions": {
     "prepared": ["ready_to_send", "manual_check"],
     "ready_to_send": ["sending", "manual_check"],
-    "sending": ["sent", "accepted", "rejected", "manual_check"],
+    "sending": ["outcome_unknown", "sent", "accepted", "rejected", "manual_check"],
+    "outcome_unknown": ["accepted", "executed", "rejected", "returned", "manual_check"],
     "sent": ["accepted", "rejected", "manual_check"],
     "accepted": ["executed", "rejected", "returned", "manual_check"],
     "executed": [],

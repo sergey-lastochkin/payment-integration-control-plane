@@ -12,6 +12,7 @@ class PaymentStatus(StrEnum):
     PREPARED = "prepared"
     READY_TO_SEND = "ready_to_send"
     SENDING = "sending"
+    OUTCOME_UNKNOWN = "outcome_unknown"
     SENT = "sent"
     ACCEPTED = "accepted"
     EXECUTED = "executed"
@@ -29,9 +30,19 @@ TRANSITIONS: dict[str, set[str]] = {
     # A bank status can arrive through another channel before the sender gets
     # the HTTP response. It is stronger evidence than the missing response.
     PaymentStatus.SENDING: {
+        PaymentStatus.OUTCOME_UNKNOWN,
         PaymentStatus.SENT,
         PaymentStatus.ACCEPTED,
         PaymentStatus.REJECTED,
+        PaymentStatus.MANUAL_CHECK,
+    },
+    # ``outcome_unknown`` means a local worker cannot prove whether the remote
+    # side effect happened. It is deliberately not a retry queue.
+    PaymentStatus.OUTCOME_UNKNOWN: {
+        PaymentStatus.ACCEPTED,
+        PaymentStatus.EXECUTED,
+        PaymentStatus.REJECTED,
+        PaymentStatus.RETURNED,
         PaymentStatus.MANUAL_CHECK,
     },
     PaymentStatus.SENT: {
@@ -78,6 +89,12 @@ class DuplicatePaymentError(PaymentError):
 
 class ChecksumError(PaymentError):
     code = "CHECKSUM_MISMATCH"
+
+
+class CallbackConflictError(PaymentError):
+    """An event id was reused with a payload different from its durable inbox row."""
+
+    code = "CALLBACK_PAYLOAD_CONFLICT"
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,19 +182,56 @@ class BankStatementRow:
     operation_id: str = ""
     document_ref: str = ""
     purpose: str = ""
+    source: str = "bank_statement"
+    statement_reference: str = ""
+
+    def stable_identity(self) -> str:
+        """Prefer the bank transaction id; otherwise use stable business fields.
+
+        A physical row number can change when a statement is regenerated, so it
+        is intentionally not part of the fallback identity.
+        """
+
+        source = self.source.strip() or "bank_statement"
+        if self.external_bank_id.strip():
+            return f"{source}:external:{self.external_bank_id.strip()}"
+        stable_fields = {
+            "source": source,
+            "statement_reference": self.statement_reference.strip(),
+            "account": self.account.strip(),
+            "amount": format(self.amount, "f"),
+            "currency": self.currency.upper(),
+            "booking_date": self.booking_date.isoformat(),
+            "purpose": " ".join(self.purpose.split()),
+            "operation_id": self.operation_id.strip(),
+            "document_ref": self.document_ref.strip(),
+        }
+        encoded = json.dumps(stable_fields, ensure_ascii=False, sort_keys=True)
+        return f"{source}:fingerprint:{sha256(encoded.encode()).hexdigest()}"
+
+    def payload_hash(self) -> str:
+        """Hash all supplied fields, including a transport row id when present."""
+
+        payload = {
+            "row_id": self.row_id,
+            "booking_date": self.booking_date.isoformat(),
+            "account": self.account,
+            "amount": format(self.amount, "f"),
+            "currency": self.currency.upper(),
+            "external_bank_id": self.external_bank_id,
+            "operation_id": self.operation_id,
+            "document_ref": self.document_ref,
+            "purpose": " ".join(self.purpose.split()),
+            "source": self.source,
+            "statement_reference": self.statement_reference,
+        }
+        encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+        return sha256(encoded.encode()).hexdigest()
 
     def fingerprint(self) -> str:
-        value = "|".join(
-            (
-                self.row_id,
-                self.booking_date.isoformat(),
-                self.account,
-                format(self.amount, "f"),
-                self.currency.upper(),
-                self.external_bank_id,
-            )
-        )
-        return sha256(value.encode()).hexdigest()
+        """Compatibility alias for callers that previously persisted a fingerprint."""
+
+        return self.payload_hash()
 
 
 def validate(payment: Payment) -> None:
