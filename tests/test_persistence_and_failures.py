@@ -5,7 +5,6 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
-
 from payment_orchestration.adapters import (
     FileClientBankAdapter,
     MockBankAdapter,
@@ -95,7 +94,7 @@ def test_file_envelope_detects_tampering(tmp_path):
         verify_envelope(envelope)
 
 
-def test_statement_row_replay_is_reported():
+def test_statement_row_replay_is_reported(tmp_path):
     payment = make_payment()
     row = BankStatementRow(
         "row-1",
@@ -105,12 +104,12 @@ def test_statement_row_replay_is_reported():
         "RUB",
         operation_id=payment.operation_id(),
     )
-    reconciler = Reconciler()
+    reconciler = Reconciler(SQLiteIntegrationRepository(str(tmp_path / "ledger.sqlite")))
     assert reconciler.match([row], [payment])[0]["status"] == "matched"
     assert reconciler.match([row], [payment])[0]["replayed"] is True
 
 
-def test_composite_match_requires_confident_evidence():
+def test_composite_match_requires_confident_evidence(tmp_path):
     payment = make_payment()
     row = {
         "account": "OTHER",
@@ -118,7 +117,9 @@ def test_composite_match_requires_confident_evidence():
         "date": "2026-01-10",
         "currency": "RUB",
     }
-    result = Reconciler().match([row], [payment])[0]
+    result = Reconciler(SQLiteIntegrationRepository(str(tmp_path / "ledger.sqlite"))).match(
+        [row], [payment]
+    )[0]
     assert result["status"] == "manual_check" and result["score"] < 60
 
 
