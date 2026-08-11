@@ -1,0 +1,9 @@
+{
+  "scenario": "unknown_outcome_recovery",
+  "status": "passed",
+  "evidence": {
+    "status": "outcome_unknown",
+    "blind_resend": false,
+    "recovered": 1
+  }
+}

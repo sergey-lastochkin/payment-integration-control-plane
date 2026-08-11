@@ -1,0 +1,8 @@
+{
+  "scenario": "duplicate_http_request",
+  "status": "passed",
+  "evidence": {
+    "attempts": 1,
+    "outbox_files": 1
+  }
+}
