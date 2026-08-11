@@ -8,7 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from payment_orchestration.adapters import FileClientBankAdapter, MockBankAdapter
+from payment_orchestration.adapters import (
+    AdapterCapabilities,
+    FileClientBankAdapter,
+    MockBankAdapter,
+    SendSemantics,
+    StatusLookup,
+)
 from payment_orchestration.domain import (
     BankStatementRow,
     CallbackConflictError,
@@ -142,6 +148,44 @@ def test_unknown_send_outcome_is_recovered_without_blind_resend(tmp_path):
     assert record.status == PaymentStatus.OUTCOME_UNKNOWN
     assert safe_adapter.sent == {}
     assert recovered.recovery_contract == "idempotent_retry_requires_explicit_operator_policy"
+
+
+def test_status_lookup_resolves_unknown_after_restart_without_second_send(tmp_path):
+    class LookupAdapter(MockBankAdapter):
+        capabilities = AdapterCapabilities(
+            SendSemantics.IDEMPOTENT, StatusLookup.SUPPORTED
+        )
+
+        def __init__(self):
+            super().__init__()
+            self.lookups: list[str] = []
+
+        def lookup(self, operation_id: str) -> dict[str, str]:
+            self.lookups.append(operation_id)
+            return {
+                "operation_id": operation_id,
+                "external_id": "bank-durable-1",
+                "status": "accepted",
+            }
+
+    path = tmp_path / "operations.sqlite"
+    item = payment("doc-lookup")
+    faulting = SQLiteIntegrationRepository(
+        str(path), fault_at="send_response_before_persist"
+    )
+    with pytest.raises(RuntimeError, match="send_response_before_persist"):
+        PaymentService(faulting, LookupAdapter()).send(item)
+    faulting.close()
+
+    reopened = SQLiteIntegrationRepository(str(path))
+    adapter = LookupAdapter()
+    service = PaymentService(reopened, adapter)
+    resolved = service.reconcile_unknown(item.operation_id())
+
+    assert resolved.status == PaymentStatus.ACCEPTED
+    assert resolved.attempts == 1
+    assert adapter.sent == {}
+    assert adapter.lookups == [item.operation_id()]
 
 
 def test_controlled_callback_and_reconciliation_crashes_roll_back(tmp_path):

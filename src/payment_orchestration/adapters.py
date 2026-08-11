@@ -34,6 +34,69 @@ class BankAdapter(Protocol):
     def send(self, payment: Payment) -> str: ...
 
 
+class HTTPBankAdapter:
+    """Real localhost HTTP client for the test-only bank emulator.
+
+    It is deliberately not a production-bank adapter.  The same operation id is
+    sent on a retry and the emulator persists it before any test fault is
+    injected, which lets the control plane exercise an actual unknown outcome.
+    """
+
+    capabilities = AdapterCapabilities(SendSemantics.IDEMPOTENT, StatusLookup.SUPPORTED)
+
+    def __init__(
+        self,
+        base_url: str,
+        callback_url: str,
+        *,
+        test_mode: str = "normal",
+        desired_status: str = "accepted",
+        correlation_id: str | None = None,
+        timeout_seconds: float = 3.0,
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.callback_url = callback_url
+        self.test_mode = test_mode
+        self.desired_status = desired_status
+        self.correlation_id = correlation_id
+        self.timeout_seconds = timeout_seconds
+
+    def send(self, payment: Payment) -> str:
+        # Imported lazily so the durable domain package remains usable without
+        # the optional HTTP integration extra.
+        import httpx
+
+        response = httpx.post(
+            f"{self.base_url}/payments",
+            json={
+                "payment": payment_envelope(payment),
+                "callback_url": self.callback_url,
+                "test_mode": self.test_mode,
+                "desired_status": self.desired_status,
+                "correlation_id": self.correlation_id or payment.operation_id(),
+            },
+            timeout=self.timeout_seconds,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        external_id = payload.get("external_id")
+        if not isinstance(external_id, str) or not external_id:
+            raise RuntimeError("bank emulator response has no external_id")
+        return external_id
+
+    def lookup(self, operation_id: str) -> dict[str, object]:
+        import httpx
+
+        response = httpx.get(
+            f"{self.base_url}/payments/{operation_id}", timeout=self.timeout_seconds
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if payload.get("operation_id") != operation_id:
+            raise RuntimeError("bank emulator returned another operation")
+        return payload
+
+
 def payment_envelope(payment: Payment) -> dict[str, object]:
     payload = {
         "operation_id": payment.operation_id(),

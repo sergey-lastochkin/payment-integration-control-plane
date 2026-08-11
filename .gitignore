@@ -1,6 +1,8 @@
 __pycache__/
 .pytest_cache/
 .venv/
+real_run/private/
+REAL_RUN_PRIVATE/
 *.pyc
 *.sqlite3
 *.db

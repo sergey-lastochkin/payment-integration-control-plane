@@ -1,18 +1,26 @@
 # Подготовка реального тестового прогона
 
-Статус: `REAL_RUN_BLOCKED` — локально не обнаружены доступные runtime 1С или n8n и не предоставлен изолированный тестовый контур.
+Статус: `LOCAL_N8N_BANK_PASS / UPP_BLOCKED`. Официальный Docker image n8n,
+local FastAPI control plane и local bank emulator реально прогнаны по HTTP.
+Тестовая УПП в этом прогоне не участвовала.
 
-Здесь нет доступа к тестовой УПП, n8n и банку. Каталог готовит последовательность проверки и журнал, который можно заполнить в закрытом тестовом контуре. Маршрут n8n отправляет данные только в bank emulator. Реальные платежи, рабочие реквизиты и production credentials в сценарий не входят.
+Здесь нет доступа к тестовой УПП или реальному банку. Каталог содержит
+последовательность проверки УПП и воспроизводимый local stack. Маршрут n8n
+отправляет данные только в bank emulator. Реальные платежи, рабочие реквизиты
+и production credentials в сценарий не входят.
 
 ```text
 real_run/
   checklist.md                 # десять шагов теста
   scripts/evidence.py          # создаёт и проверяет журнал
+  local_stack/                 # pinned n8n + local FastAPI services + runner
   capture/                     # игнорируется Git
   templates/                   # JSON-шаблоны без реквизитов
 ```
 
-Перед стартом координатор создаёт пустой журнал. Команда запишет `run_id`, время и commit SHA, но не подставит версию 1С и конфигурации: их нужно считать из тестового контура.
+Для УПП прогона координатор создаёт закрытый журнал. Команда запишет `run_id`,
+время и commit SHA, но не подставит версию 1С и конфигурации: их нужно считать
+из тестового контура.
 
 ```bash
 PYTHONPATH=src .venv/bin/python real_run/scripts/evidence.py init \
@@ -42,3 +50,24 @@ PYTHONPATH=src .venv/bin/python real_run/scripts/evidence.py check \
 ```
 
 Шаблон n8n находится в [templates/n8n-bank-emulator-workflow.json](templates/n8n-bank-emulator-workflow.json). Перед импортом в n8n требуется задать `BANK_EMULATOR_URL` для безопасного эмулятора, а не адрес банка.
+
+## Локальный n8n + bank emulator
+
+`local_stack` использует официальный `n8nio/n8n:1.82.3`. Все сервисы живут в
+одной временной Docker network; с Mac опубликованы только
+`127.0.0.1:5678`, `127.0.0.1:18080` и `127.0.0.1:18081`. n8n и обе SQLite базы
+лежат в scoped named volumes, поэтому restart control plane и n8n не стирает
+состояние в ходе прогона. Workflow состоит из стандартных Webhook, Set, IF и
+HTTP Request узлов — Function node нет.
+
+```bash
+PYTHONPATH=src .venv/bin/python real_run/local_stack/run_e2e.py \
+  --run-id real-n8n-bank-YYYY-MM-DD-01 \
+  --public-output real_run/runs/local-n8n-bank-YYYY-MM-DD/summary.json
+```
+
+Runner сам проверяет восемь synthetic-сценариев и сохраняет подробные SQLite,
+HTTP traces, container logs и build log только в `real_run/private/`. Перед
+созданием public summary он откажется записывать строки с адресами local stack
+или secret-shaped полями. Публичный summary указывает, что `one_c_participated`
+равно `false`; его нельзя использовать как доказательство УПП.
