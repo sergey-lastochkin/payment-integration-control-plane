@@ -1,0 +1,162 @@
+{
+  "run_id": "local-2026-08-11-02",
+  "executed_at": "2026-08-11T06:41:23.584611+00:00",
+  "code_commit": "248752e5c9c4529be494861a90d2339e7b0e7b6a",
+  "runtime": {
+    "python": "3.12.12",
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  },
+  "scope": "local deterministic failure lab; no 1C, n8n or bank connection",
+  "scenarios": [
+    {
+      "scenario": "duplicate_operation",
+      "status": "passed",
+      "evidence": {
+        "operation_id": "upp-payment:case-duplicate-operation",
+        "attempts": 0
+      }
+    },
+    {
+      "scenario": "duplicate_http_request",
+      "status": "passed",
+      "evidence": {
+        "attempts": 1,
+        "outbox_files": 1
+      }
+    },
+    {
+      "scenario": "status_before_lost_response",
+      "status": "passed",
+      "evidence": {
+        "status": "accepted",
+        "attempts": 1
+      }
+    },
+    {
+      "scenario": "repeated_bank_status",
+      "status": "passed",
+      "evidence": {
+        "accepted_events": 1,
+        "status": "accepted"
+      }
+    },
+    {
+      "scenario": "repeated_statement",
+      "status": "passed",
+      "evidence": {
+        "first_status": "matched",
+        "replayed": true
+      }
+    },
+    {
+      "scenario": "ambiguous_statement",
+      "status": "passed",
+      "evidence": {
+        "status": "manual_check",
+        "candidate_count": 2
+      }
+    },
+    {
+      "scenario": "illegal_transition",
+      "status": "passed",
+      "evidence": {
+        "blocked": true,
+        "from_status": "sent",
+        "to_status": "executed"
+      }
+    },
+    {
+      "scenario": "worker_restart",
+      "status": "passed",
+      "evidence": {
+        "status_after_restart": "sent",
+        "attempts": 1
+      }
+    },
+    {
+      "scenario": "storage_unavailable",
+      "status": "passed",
+      "evidence": {
+        "blocked": true
+      }
+    },
+    {
+      "scenario": "route_unavailable",
+      "status": "passed",
+      "evidence": {
+        "status": "sending",
+        "retry_action": "reconcile_before_retry"
+      }
+    },
+    {
+      "scenario": "auth_error",
+      "status": "passed",
+      "evidence": {
+        "status": "sending",
+        "retry_action": "reconcile_before_retry"
+      }
+    },
+    {
+      "scenario": "corrupted_exchange",
+      "status": "passed",
+      "evidence": {
+        "blocked": true,
+        "check": "checksum_mismatch"
+      }
+    },
+    {
+      "scenario": "manual_resolution",
+      "status": "passed",
+      "evidence": {
+        "status": "executed",
+        "audit_source": "manual_resolution"
+      }
+    },
+    {
+      "scenario": "durable_statement_restart",
+      "status": "passed",
+      "evidence": {
+        "replayed_after_reopen": true
+      }
+    },
+    {
+      "scenario": "durable_callback_restart",
+      "status": "passed",
+      "evidence": {
+        "accepted_events": 1,
+        "replayed_after_reopen": true
+      }
+    },
+    {
+      "scenario": "unknown_outcome_recovery",
+      "status": "passed",
+      "evidence": {
+        "status": "outcome_unknown",
+        "blind_resend": false,
+        "recovered": 1
+      }
+    },
+    {
+      "scenario": "multiprocess_claim",
+      "status": "passed",
+      "evidence": {
+        "workers_started": 2,
+        "claims_successful": 1,
+        "send_attempts": 1,
+        "worker_states": [
+          "sent",
+          "sent"
+        ]
+      }
+    },
+    {
+      "scenario": "reconciliation_ledger_smoke",
+      "status": "passed",
+      "evidence": {
+        "inserts": 10000,
+        "p50_ms": 0.0451,
+        "p95_ms": 0.0704
+      }
+    }
+  ]
+}

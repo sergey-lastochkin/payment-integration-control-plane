@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
+from enum import StrEnum
 from hashlib import sha256
 from pathlib import Path
 from typing import Protocol
@@ -8,7 +10,27 @@ from typing import Protocol
 from .domain import ChecksumError, Payment
 
 
+class SendSemantics(StrEnum):
+    """What this adapter can prove about reusing an external send request."""
+
+    IDEMPOTENT = "idempotent"
+    UNKNOWN = "unknown"
+
+
+class StatusLookup(StrEnum):
+    SUPPORTED = "supported"
+    UNSUPPORTED = "unsupported"
+
+
+@dataclass(frozen=True, slots=True)
+class AdapterCapabilities:
+    send_semantics: SendSemantics
+    status_lookup: StatusLookup
+
+
 class BankAdapter(Protocol):
+    capabilities: AdapterCapabilities
+
     def send(self, payment: Payment) -> str: ...
 
 
@@ -44,6 +66,10 @@ def verify_envelope(envelope: dict[str, object]) -> None:
 
 
 class MockBankAdapter:
+    capabilities = AdapterCapabilities(
+        SendSemantics.IDEMPOTENT, StatusLookup.UNSUPPORTED
+    )
+
     def __init__(self, fail_with: Exception | None = None) -> None:
         self.sent: dict[str, str] = {}
         self.fail_with = fail_with
@@ -60,6 +86,10 @@ class MockBankAdapter:
 
 class FileClientBankAdapter:
     """Deterministic local file adapter; it never calls a real bank."""
+
+    capabilities = AdapterCapabilities(
+        SendSemantics.IDEMPOTENT, StatusLookup.UNSUPPORTED
+    )
 
     def __init__(self, directory: Path) -> None:
         self.directory = directory

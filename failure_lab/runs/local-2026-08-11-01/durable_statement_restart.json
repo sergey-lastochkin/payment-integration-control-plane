@@ -1,0 +1,7 @@
+{
+  "scenario": "durable_statement_restart",
+  "status": "passed",
+  "evidence": {
+    "replayed_after_reopen": true
+  }
+}

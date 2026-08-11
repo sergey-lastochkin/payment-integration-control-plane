@@ -1,0 +1,9 @@
+{
+  "scenario": "reconciliation_ledger_smoke",
+  "status": "passed",
+  "evidence": {
+    "inserts": 10000,
+    "p50_ms": 0.0441,
+    "p95_ms": 0.0635
+  }
+}

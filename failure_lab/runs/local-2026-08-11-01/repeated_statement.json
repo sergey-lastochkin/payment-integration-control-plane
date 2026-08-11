@@ -1,0 +1,8 @@
+{
+  "scenario": "repeated_statement",
+  "status": "passed",
+  "evidence": {
+    "first_status": "matched",
+    "replayed": true
+  }
+}

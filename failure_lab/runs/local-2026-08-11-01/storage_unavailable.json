@@ -1,0 +1,7 @@
+{
+  "scenario": "storage_unavailable",
+  "status": "passed",
+  "evidence": {
+    "blocked": true
+  }
+}

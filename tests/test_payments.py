@@ -12,7 +12,7 @@ from payment_orchestration.domain import (
     validate,
 )
 from payment_orchestration.reconciliation import Reconciler
-from payment_orchestration.repository import Registry
+from payment_orchestration.repository import Registry, SQLiteIntegrationRepository
 from payment_orchestration.service import PaymentService
 
 
@@ -86,15 +86,17 @@ def test_rejected_and_returned():
         assert r.records[p.operation_id()].status == terminal
 
 
-def test_ambiguous_reconciliation():
+def test_ambiguous_reconciliation(tmp_path):
     p1 = payment("a")
     p2 = payment("b")
     rows = [{"account": "RA", "amount": "100.00", "date": "2026-01-10"}]
-    out = Reconciler().match(rows, [p1, p2])
+    out = Reconciler(SQLiteIntegrationRepository(str(tmp_path / "ops.sqlite"))).match(rows, [p1, p2])
     assert out[0]["status"] == "manual_check" and out[0]["candidate_count"] == 2
 
 
-def test_reconciliation_operation_id():
+def test_reconciliation_operation_id(tmp_path):
     p = payment()
-    out = Reconciler().match([{"operation_id": p.operation_id()}], [p])
+    out = Reconciler(SQLiteIntegrationRepository(str(tmp_path / "ops.sqlite"))).match(
+        [{"operation_id": p.operation_id()}], [p]
+    )
     assert out[0]["payment"] is p

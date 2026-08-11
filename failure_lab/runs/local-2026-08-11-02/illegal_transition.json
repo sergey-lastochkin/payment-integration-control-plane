@@ -1,0 +1,9 @@
+{
+  "scenario": "illegal_transition",
+  "status": "passed",
+  "evidence": {
+    "blocked": true,
+    "from_status": "sent",
+    "to_status": "executed"
+  }
+}

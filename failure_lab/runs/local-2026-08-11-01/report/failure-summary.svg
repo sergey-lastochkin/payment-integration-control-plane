@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="704" viewBox="0 0 940 704">
+<rect width="100%" height="100%" fill="white"/>
+<text x="24" y="34" font-family="Arial, sans-serif" font-size="20">Локальный прогон: сценарии сбоев</text>
+<text x="24" y="58" font-family="Arial, sans-serif" font-size="13" fill="#475569">run_id: local-2026-08-11-01; только эмулятор, без 1С, n8n и банка</text>
+<text x="24" y="94" font-family="monospace" font-size="14">Повторное создание операции</text>
+<rect x="425" y="74" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="91" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="128" font-family="monospace" font-size="14">Повторный HTTP-запрос</text>
+<rect x="425" y="108" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="125" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="162" font-family="monospace" font-size="14">Статус до потерянного ответа</text>
+<rect x="425" y="142" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="159" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="196" font-family="monospace" font-size="14">Повторный банковский статус</text>
+<rect x="425" y="176" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="193" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="230" font-family="monospace" font-size="14">Повторная выписка</text>
+<rect x="425" y="210" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="227" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="264" font-family="monospace" font-size="14">Неоднозначная строка выписки</text>
+<rect x="425" y="244" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="261" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="298" font-family="monospace" font-size="14">Недопустимый переход состояния</text>
+<rect x="425" y="278" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="295" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="332" font-family="monospace" font-size="14">Перезапуск обработчика</text>
+<rect x="425" y="312" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="329" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="366" font-family="monospace" font-size="14">Недоступно хранилище</text>
+<rect x="425" y="346" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="363" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="400" font-family="monospace" font-size="14">Недоступен маршрут</text>
+<rect x="425" y="380" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="397" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="434" font-family="monospace" font-size="14">Ошибка авторизации</text>
+<rect x="425" y="414" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="431" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="468" font-family="monospace" font-size="14">Повреждённый обменный конверт</text>
+<rect x="425" y="448" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="465" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="502" font-family="monospace" font-size="14">Ручное завершение</text>
+<rect x="425" y="482" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="499" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="536" font-family="monospace" font-size="14">durable_statement_restart</text>
+<rect x="425" y="516" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="533" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="570" font-family="monospace" font-size="14">durable_callback_restart</text>
+<rect x="425" y="550" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="567" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="604" font-family="monospace" font-size="14">unknown_outcome_recovery</text>
+<rect x="425" y="584" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="601" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="638" font-family="monospace" font-size="14">multiprocess_claim</text>
+<rect x="425" y="618" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="635" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+<text x="24" y="672" font-family="monospace" font-size="14">reconciliation_ledger_smoke</text>
+<rect x="425" y="652" width="80" height="24" rx="4" fill="#15803d"/>
+<text x="442" y="669" font-family="monospace" font-size="13" fill="white">ПРОЙДЕН</text>
+</svg>

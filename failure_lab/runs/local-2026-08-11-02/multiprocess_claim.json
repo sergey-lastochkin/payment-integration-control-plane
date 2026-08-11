@@ -1,0 +1,13 @@
+{
+  "scenario": "multiprocess_claim",
+  "status": "passed",
+  "evidence": {
+    "workers_started": 2,
+    "claims_successful": 1,
+    "send_attempts": 1,
+    "worker_states": [
+      "sent",
+      "sent"
+    ]
+  }
+}
