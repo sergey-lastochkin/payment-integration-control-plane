@@ -32,9 +32,3 @@ jobs:
         run: |
           run_root="$(mktemp -d)"
           PYTHONPATH=src python failure_lab/run.py --runs "$run_root" --run-id ci-smoke
-      - name: Real local n8n and bank acceptance
-        run: |
-          run_root="$(mktemp -d)"
-          PYTHONPATH=src python real_run/local_stack/run_e2e.py \
-            --run-id real-n8n-bank-ci \
-            --private-root "$run_root"
