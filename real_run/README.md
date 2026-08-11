@@ -71,3 +71,7 @@ HTTP traces, container logs и build log только в `real_run/private/`. П
 созданием public summary он откажется записывать строки с адресами local stack
 или secret-shaped полями. Публичный summary указывает, что `one_c_participated`
 равно `false`; его нельзя использовать как доказательство УПП.
+
+Последний очищенный результат: [summary.json](runs/local-n8n-bank-2026-08-11/summary.json).
+Он содержит восемь пройденных сценариев и n8n execution IDs, но не содержит
+endpoint, credential, HTTP body, SQLite или container log.

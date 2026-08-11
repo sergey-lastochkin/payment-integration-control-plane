@@ -39,7 +39,8 @@
 delayed response, callback-before-response, duplicate/conflicting callbacks,
 response loss after durable bank commit, restart и status lookup. Для каждого
 успешного intake n8n возвращает фактический `$execution.id`; это не выдуманный
-идентификатор.
+идентификатор. Очищенный результат доступен в
+[local integration summary](real_run/runs/local-n8n-bank-2026-08-11/summary.json).
 
 Папка с фактическими скриншотами, трассировками и HTTP-подтверждениями игнорируется Git. Пока тестовый контур не предоставлен, состояние честно остаётся `REAL_RUN_BLOCKED`.
 
