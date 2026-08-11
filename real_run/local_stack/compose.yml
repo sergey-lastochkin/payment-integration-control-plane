@@ -1,0 +1,79 @@
+name: payment-real-run
+
+services:
+  bank:
+    image: payment-real-run-control-plane:dev
+    command:
+      - python
+      - -m
+      - payment_orchestration.bank_emulator
+      - --database
+      - /data/bank.sqlite
+      - --trace
+      - /data/bank.trace.jsonl
+      - --host
+      - 0.0.0.0
+    ports:
+      - 127.0.0.1:18081:18081
+    volumes:
+      - bank-data:/data
+
+  payment:
+    image: payment-real-run-control-plane:dev
+    command:
+      - python
+      - -m
+      - payment_orchestration.http_runtime
+      - --database
+      - /data/payment.sqlite
+      - --bank-url
+      - http://bank:18081
+      - --callback-url
+      - http://n8n:5678/webhook/bank-callback
+      - --trace
+      - /data/payment.trace.jsonl
+      - --host
+      - 0.0.0.0
+    depends_on:
+      - bank
+    ports:
+      - 127.0.0.1:18080:18080
+    volumes:
+      - payment-data:/data
+
+  workflow-import:
+    image: n8nio/n8n:1.82.3
+    environment: &n8n_environment
+      DB_TYPE: sqlite
+      DB_SQLITE_POOL_SIZE: "2"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_SECURE_COOKIE: "false"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_RUNNERS_ENABLED: "true"
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: all
+      EXECUTIONS_DATA_SAVE_ON_ERROR: all
+      EXECUTIONS_DATA_PRUNE: "false"
+      N8N_HOST: localhost
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+    volumes:
+      - n8n-data:/home/node/.n8n
+    command: import:workflow --input=/tmp/workflow.json
+
+  n8n:
+    image: n8nio/n8n:1.82.3
+    depends_on:
+      workflow-import:
+        condition: service_completed_successfully
+    environment: *n8n_environment
+    ports:
+      - 127.0.0.1:5678:5678
+    volumes:
+      - n8n-data:/home/node/.n8n
+    restart: unless-stopped
+
+volumes:
+  bank-data:
+  payment-data:
+  n8n-data:

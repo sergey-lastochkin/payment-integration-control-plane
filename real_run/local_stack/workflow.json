@@ -1,0 +1,145 @@
+[
+  {
+    "id": "payment-real-run-intake",
+    "name": "Payment real run: intake to control plane",
+    "active": true,
+    "settings": {"executionOrder": "v1"},
+    "nodes": [
+      {
+        "id": "webhook-intake",
+        "name": "Receive synthetic 1C HTTP request",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [-600, 0],
+        "parameters": {"httpMethod": "POST", "path": "payment", "responseMode": "lastNode", "options": {}},
+        "webhookId": "payment-real-run-intake"
+      },
+      {
+        "id": "normalize-payment",
+        "name": "Normalize transport payload",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [-360, 0],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {"id": "run-id", "name": "run_id", "value": "={{ $json.body.run_id }}", "type": "string"},
+              {"id": "request-id", "name": "request_id", "value": "={{ $json.body.request_id }}", "type": "string"},
+              {"id": "correlation-id", "name": "correlation_id", "value": "={{ $json.body.correlation_id }}", "type": "string"},
+              {"id": "document-ref", "name": "document_ref", "value": "={{ $json.body.document_ref }}", "type": "string"},
+              {"id": "test-mode", "name": "test_mode", "value": "={{ $json.body.test_mode }}", "type": "string"},
+              {"id": "desired-status", "name": "desired_status", "value": "={{ $json.body.desired_status }}", "type": "string"},
+              {"id": "amount", "name": "amount", "value": "={{ $json.body.amount }}", "type": "string"}
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "validate-synthetic",
+        "name": "Validate synthetic test marker",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [-120, 0],
+        "parameters": {
+          "conditions": {
+            "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2},
+            "conditions": [
+              {"id": "test-document", "leftValue": "={{ $json.document_ref }}", "rightValue": "TEST-", "operator": {"type": "string", "operation": "startsWith"}}
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "submit-control-plane",
+        "name": "Submit Payment Control Plane",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [120, 0],
+        "parameters": {
+          "method": "POST",
+          "url": "http://payment:18080/v1/payments",
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/json",
+          "body": "={{ JSON.stringify($json) }}",
+          "options": {"timeout": 8000}
+        }
+      },
+      {
+        "id": "read-bank-status",
+        "name": "Read Bank Emulator Status",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [360, 0],
+        "parameters": {
+          "method": "GET",
+          "url": "={{ 'http://bank:18081/payments/' + $json.operation_id }}",
+          "options": {"timeout": 5000}
+        }
+      },
+      {
+        "id": "return-execution-evidence",
+        "name": "Return n8n execution evidence",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [600, 0],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {"id": "execution-id", "name": "n8n_execution_id", "value": "={{ $execution.id }}", "type": "string"},
+              {"id": "workflow-name", "name": "n8n_workflow", "value": "Payment real run: intake to control plane", "type": "string"}
+            ]
+          },
+          "options": {}
+        }
+      }
+    ],
+    "connections": {
+      "Receive synthetic 1C HTTP request": {"main": [[{"node": "Normalize transport payload", "type": "main", "index": 0}]]},
+      "Normalize transport payload": {"main": [[{"node": "Validate synthetic test marker", "type": "main", "index": 0}]]},
+      "Validate synthetic test marker": {"main": [[{"node": "Submit Payment Control Plane", "type": "main", "index": 0}], []]},
+      "Submit Payment Control Plane": {"main": [[{"node": "Read Bank Emulator Status", "type": "main", "index": 0}]]},
+      "Read Bank Emulator Status": {"main": [[{"node": "Return n8n execution evidence", "type": "main", "index": 0}]]}
+    },
+    "pinData": {}
+  },
+  {
+    "id": "payment-real-run-callback",
+    "name": "Payment real run: bank callback to control plane",
+    "active": true,
+    "settings": {"executionOrder": "v1"},
+    "nodes": [
+      {
+        "id": "webhook-callback",
+        "name": "Receive Bank Callback",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [-320, 0],
+        "parameters": {"httpMethod": "POST", "path": "bank-callback", "responseMode": "lastNode", "options": {}},
+        "webhookId": "payment-real-run-callback"
+      },
+      {
+        "id": "callback-control-plane",
+        "name": "Apply callback in Payment Control Plane",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [0, 0],
+        "parameters": {
+          "method": "POST",
+          "url": "http://payment:18080/v1/callbacks",
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/json",
+          "body": "={{ JSON.stringify($json.body) }}",
+          "options": {"timeout": 5000}
+        }
+      }
+    ],
+    "connections": {
+      "Receive Bank Callback": {"main": [[{"node": "Apply callback in Payment Control Plane", "type": "main", "index": 0}]]}
+    },
+    "pinData": {}
+  }
+]

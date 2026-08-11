@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "kind": "local_real_http_n8n_bank_validation",
+  "status": "PASS",
+  "run_id": "real-n8n-bank-2026-08-11-final",
+  "timestamp": "2026-08-11T07:28:58.785746+00:00",
+  "code_commit": "6576ed6a220830b6b2da348a9e2e10ea8ecd9875",
+  "duration_ms": 17892,
+  "scope": {
+    "synthetic_only": true,
+    "components": [
+      "HTTP client",
+      "n8n:1.82.3",
+      "payment control plane",
+      "bank emulator"
+    ],
+    "one_c_participated": false
+  },
+  "scenarios": [
+    {
+      "name": "A_normal_route",
+      "passed": true,
+      "n8n_http_status": 200,
+      "final_status": "accepted",
+      "attempts": 1
+    },
+    {
+      "name": "B_duplicate_submit",
+      "passed": true,
+      "n8n_http_status": 200,
+      "attempts": 1,
+      "bank_rows": 1
+    },
+    {
+      "name": "C_delayed_response",
+      "passed": true,
+      "n8n_http_status": 200,
+      "final_status": "accepted"
+    },
+    {
+      "name": "D_callback_before_response",
+      "passed": true,
+      "n8n_http_status": 200,
+      "final_status": "accepted",
+      "stronger_status_preserved": true
+    },
+    {
+      "name": "E_duplicate_callback",
+      "passed": true,
+      "n8n_http_status": 200,
+      "accepted_transitions": 1
+    },
+    {
+      "name": "F_response_lost_after_commit",
+      "passed": true,
+      "n8n_http_status": 500,
+      "recovered_from": "outcome_unknown",
+      "final_status": "accepted",
+      "bank_rows": 1,
+      "blind_resend": false
+    },
+    {
+      "name": "G_repeated_bank_event",
+      "passed": true,
+      "callback_http_statuses": [
+        200,
+        200
+      ],
+      "state_transition_replayed": false
+    },
+    {
+      "name": "H_conflicting_callback",
+      "passed": true,
+      "n8n_http_status": 200,
+      "final_status": "manual_check",
+      "manual_check": true
+    }
+  ],
+  "n8n_executions": [],
+  "n8n_execution_ids": [
+    "1",
+    "3",
+    "4",
+    "6",
+    "8",
+    "12",
+    "13",
+    "17"
+  ],
+  "private_trace_collected": true
+}

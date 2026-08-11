@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from hashlib import sha256
 
-from .adapters import BankAdapter
+from .adapters import BankAdapter, StatusLookup
 from .domain import (
     CallbackConflictError,
     IntegrationRecord,
@@ -170,6 +170,38 @@ class PaymentService:
         record.callback_ids.add(stable_event_id)
         self.registry.save(record)
         return record
+
+    def reconcile_unknown(self, operation_id: str) -> IntegrationRecord:
+        """Resolve an uncertain external send only through a declared lookup."""
+
+        record = self.registry.get(operation_id)
+        if record.status != PaymentStatus.OUTCOME_UNKNOWN:
+            return record
+        capabilities = getattr(self.adapter, "capabilities", None)
+        lookup = getattr(self.adapter, "lookup", None)
+        if (
+            not capabilities
+            or capabilities.status_lookup != StatusLookup.SUPPORTED
+            or not lookup
+        ):
+            raise RuntimeError("status lookup is unavailable for this adapter")
+        outcome = lookup(operation_id)
+        status = str(outcome.get("status", ""))
+        external_id = outcome.get("external_id")
+        if status not in {
+            PaymentStatus.ACCEPTED,
+            PaymentStatus.EXECUTED,
+            PaymentStatus.REJECTED,
+            PaymentStatus.RETURNED,
+        }:
+            raise RuntimeError(f"bank lookup returned unresolved status: {status}")
+        return self._transition(
+            operation_id,
+            status,
+            "bank_status_lookup",
+            "resolved after unknown external outcome",
+            str(external_id) if external_id else None,
+        )
 
     def resolve_manual(
         self, operation_id: str, status: str, decision_note: str, decided_by: str
