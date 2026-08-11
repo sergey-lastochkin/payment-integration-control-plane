@@ -44,6 +44,7 @@ python -m venv .venv
 PYTHONPATH=src .venv/bin/python -m pytest
 PYTHONPATH=src .venv/bin/python failure_lab/run.py \
   --run-id local-YYYY-MM-DD-01
+PYTHONPATH=src .venv/bin/python failure_lab/restart_demo.py
 PYTHONPATH=src .venv/bin/python failure_lab/render_report.py \
   --summary failure_lab/runs/local-YYYY-MM-DD-01/summary.json \
   --output-dir failure_lab/runs/local-YYYY-MM-DD-01/report
@@ -51,6 +52,7 @@ ruff check src tests failure_lab real_run
 ```
 
 `run.py` создаёт временные SQLite и файлы банковского конверта во временном каталоге, затем удаляет их. В `runs/` остаются JSON-результаты и графические отчёты.
+`restart_demo.py` отдельно показывает переход `sending → outcome_unknown` после restart и ноль новых внешних send без явной политики восстановления.
 
 ## Проверено автоматически
 

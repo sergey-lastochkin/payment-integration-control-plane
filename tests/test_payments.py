@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+
 from payment_orchestration.adapters import FileClientBankAdapter, MockBankAdapter
 from payment_orchestration.domain import (
     Party,

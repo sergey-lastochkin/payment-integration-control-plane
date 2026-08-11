@@ -7,6 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+
 from payment_orchestration.adapters import FileClientBankAdapter, MockBankAdapter
 from payment_orchestration.domain import (
     BankStatementRow,
@@ -145,6 +146,16 @@ def test_unknown_send_outcome_is_recovered_without_blind_resend(tmp_path):
 
 def test_controlled_callback_and_reconciliation_crashes_roll_back(tmp_path):
     item = payment()
+    transition_path = tmp_path / "transition.sqlite"
+    transition_repo = SQLiteIntegrationRepository(
+        str(transition_path), fault_at="transition_before_commit"
+    )
+    with pytest.raises(RuntimeError, match="transition_before_commit"):
+        PaymentService(transition_repo, MockBankAdapter()).prepare(item)
+    transition_repo.close()
+    transition_reopened = SQLiteIntegrationRepository(str(transition_path))
+    assert transition_reopened.get(item.operation_id()).status == PaymentStatus.PREPARED
+
     callback_path = tmp_path / "callback.sqlite"
     callback_repo = SQLiteIntegrationRepository(str(callback_path), fault_at="callback_before_commit")
     callback_service = PaymentService(callback_repo, MockBankAdapter())
